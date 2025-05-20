@@ -1,0 +1,74 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: xburn-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: xen_burn_analytics
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    restart: unless-stopped
+    networks:
+      - xburn-network
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: xburn-metabase
+    ports:
+      - "3030:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: postgres
+      MB_DB_PASS: postgres
+      MB_DB_HOST: postgres
+    volumes:
+      - ./metabase-data:/metabase-data
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - xburn-network
+
+  # Uncomment the following section to run the indexer in Docker as well
+  # indexer:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: xburn-indexer
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=postgres
+  #     - DB_NAME=xen_burn_analytics
+  #     - BASE_RPC_URL=your_base_rpc_url
+  #     - START_BLOCK_BASE=7000000
+  #     - XEN_CONTRACT_ADDRESS_BASE=0xffcbF84650cE02DaFE96926B37a0ac5E34932fa5
+  #     - XBURN_MINTER_CONTRACT_ADDRESS_BASE=0xe89AFDeFeBDba033f6e750615f0A0f1A37C78c4A
+  #     - XBURN_NFT_CONTRACT_ADDRESS_BASE=0x305C60D2fEf49FADfEe67EC530DE98f67bac861D
+  #     - INDEXER_INTERVAL_MS=15000
+  #     - ANALYTICS_UPDATE_INTERVAL_MS=300000
+  #     - API_PORT=3000
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
+  #   restart: unless-stopped
+  #   networks:
+  #     - xburn-network
+
+networks:
+  xburn-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  metabase-data: 
